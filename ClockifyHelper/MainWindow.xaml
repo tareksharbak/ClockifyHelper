@@ -38,8 +38,10 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
@@ -47,15 +49,19 @@
                 </Grid.RowDefinitions>
 
                 <Label Margin="5" Grid.Row="0" Grid.Column="0">Username:</Label>
-                <Label Margin="5" Grid.Row="0" Grid.Column="1" Content="{Binding Username}"></Label>
+                <Label Margin="5" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Content="{Binding Username}"></Label>
 
                 <Label Margin="5" Grid.Row="1" Grid.Column="0">Workspace:</Label>
-                <Label Margin="5" Grid.Row="1" Grid.Column="1" Content="{Binding Workspace}"></Label>
+                <Label Margin="5" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Content="{Binding Workspace}"></Label>
 
                 <Label Margin="5" Grid.Row="2" Grid.Column="0">Projects:</Label>
-                <ComboBox Margin="5" Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Projects}" SelectedItem="{Binding SelectedProject}" IsEnabled="{Binding ProjectsEnabled}"></ComboBox>
+                <ComboBox Margin="5" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" ItemsSource="{Binding Projects}" SelectedItem="{Binding SelectedProject}" IsEnabled="{Binding ProjectsEnabled}"></ComboBox>
 
-                <Label Margin="50" Grid.Row="3" Grid.ColumnSpan="2" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Content="{Binding IsWorkStarted}"></Label>
+                <Label Margin="5" Grid.Row="3" Grid.Column="0">Idle Time Threshold:</Label>
+                <TextBox Margin="5" Grid.Row="3" Grid.Column="1" Text="{Binding IdleThresholdMinutes, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding ProjectsEnabled}"></TextBox>
+                <Label Margin="5" Grid.Row="3" Grid.Column="2">Minutes</Label>
+                
+                <Label Margin="50" Grid.Row="4" Grid.ColumnSpan="2" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Content="{Binding IsWorkStarted}"></Label>
             </Grid>
         </StackPanel>
 

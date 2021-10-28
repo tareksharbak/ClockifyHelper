@@ -14,9 +14,9 @@ namespace ClockifyHelper
 {
     public class ViewModel : ViewModelBase
     {
-        private Win32LastInputInfo lastInputBuffer = new Win32LastInputInfo();
-
         private string hiddenCharacter = " *";
+
+        private IdleTimeService idleTimeService;
 
         private ClockifyService clockifyService;
         private string apiKeyTextBox;
@@ -34,18 +34,15 @@ namespace ClockifyHelper
 
         private bool isStarted;
 
-        private const double timerInterval = 10 * 1000; //60 seconds
-        private uint? baseLine;
-        private uint timeSinceBaseLine;
-
         private bool isWorkStarted;
-
-        private TimeSpan idleTimeThreshold = TimeSpan.FromMinutes(30);
-
-        private Timer timer;
+        private int idleThresholdMinutes = 15;
 
         public ViewModel()
         {
+            idleTimeService = new IdleTimeService(TimeSpan.FromMinutes(idleThresholdMinutes));
+            idleTimeService.UserIdled += IdleTimeService_UserIdled;
+            idleTimeService.UserReactivated += IdleTimeService_UserReactivated;
+
             SaveCommand = new ObservableCommand<ViewModel>(
                 this,
                 execute: async (x) =>
@@ -103,16 +100,12 @@ namespace ClockifyHelper
                 {
                     if (!isStarted)
                     {
-                        timer = new Timer(timerInterval);
-                        timer.Elapsed += Timer_Elapsed;
-                        timer.AutoReset = true;
-                        timer.Start();
+                        idleTimeService.Start();
                         await StartWorkAsync();
                     }
                     else
                     {
-                        timer.Dispose();
-                        timer = null;
+                        idleTimeService.Stop();
                         await StopWorkAsync();
                     }
                     IsStarted = !IsStarted;
@@ -121,43 +114,16 @@ namespace ClockifyHelper
                 {
                     return IsApiKeySaved && SelectedProject != null;
                 });
-
-            lastInputBuffer.cbSize = (uint)Win32LastInputInfo.SizeOf;
         }
 
-        private async void Timer_Elapsed(object sender, ElapsedEventArgs e)
+        private async void IdleTimeService_UserReactivated(object sender, EventArgs e)
         {
-            Win32.GetLastInputInfo(out lastInputBuffer);
+            await StartWorkAsync();
+        }
 
-            if (lastInputBuffer.dwTime != baseLine)
-            {
-                baseLine = lastInputBuffer.dwTime;
-                timeSinceBaseLine = baseLine.Value;
-            }
-            else
-            {
-                timeSinceBaseLine += (uint)timerInterval;
-            }
-
-            var idleTime = timeSinceBaseLine - baseLine.Value;
-            var idleTimeSpan = TimeSpan.FromMilliseconds(idleTime);
-
-            if (idleTimeSpan >= idleTimeThreshold)
-            {
-                if (IsWorkStarted)
-                {
-                    await StopWorkAsync();
-                }
-            }
-            else
-            {
-                if (!IsWorkStarted)
-                {
-                    await StartWorkAsync();
-                }
-            }
-
-            Debug.WriteLine($"User been idle for {Math.Round(idleTimeSpan.TotalSeconds, 2)} seconds");
+        private async void IdleTimeService_UserIdled(object sender, EventArgs e)
+        {
+            await StopWorkAsync();
         }
 
         private async Task StartWorkAsync()
@@ -170,6 +136,16 @@ namespace ClockifyHelper
         {
             await clockifyService.StopTimerAsync(userId, workspaceId).ConfigureAwait(true);
             Application.Current.Dispatcher.Invoke(() => IsWorkStarted = false);
+        }
+
+        public int IdleThresholdMinutes
+        {
+            get => idleThresholdMinutes;
+            set
+            {
+                SetProperty(ref idleThresholdMinutes, value);
+                idleTimeService.ChangeIdleTimeThreshold(TimeSpan.FromMinutes(value));
+            }
         }
 
         public string ApiKeyTextBox
@@ -202,7 +178,7 @@ namespace ClockifyHelper
         {
             get
             {
-                return IsStarted ? "Stop" : "Start";
+                return IsStarted ? "Stop" : "Activate";
             }
         }
 
