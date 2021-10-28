@@ -1,0 +1,64 @@
+﻿<Window x:Class="ClockifyHelper.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ClockifyHelper" d:DataContext="{d:DesignInstance Type=local:ViewModel}"
+        xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="4*"/>
+            <ColumnDefinition Width="1*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Label Grid.Row="0" Grid.Column="0" Margin="5" VerticalAlignment="Center">API Key</Label>
+        <TextBox Grid.Row="0" Grid.Column="1" Margin="5" VerticalContentAlignment="Center" Text="{Binding ApiKeyTextBox, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding ApiKeyTextBoxEnabled}">
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="LostFocus">
+                    <i:InvokeCommandAction Command="{Binding HideApiTextCommand}" />
+                </i:EventTrigger>
+                <i:EventTrigger EventName="GotFocus">
+                    <i:InvokeCommandAction Command="{Binding RestoreApiTextCommand}" />
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
+        </TextBox>
+
+        <Button Grid.Row="0" Grid.Column="2" Margin="5" Content="{Binding SaveButtonName}" Height="30" Background="LightGreen" Command="{Binding SaveCommand}"></Button>
+
+        <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Margin="5">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Label Margin="5" Grid.Row="0" Grid.Column="0">Username:</Label>
+                <Label Margin="5" Grid.Row="0" Grid.Column="1" Content="{Binding Username}"></Label>
+
+                <Label Margin="5" Grid.Row="1" Grid.Column="0">Workspace:</Label>
+                <Label Margin="5" Grid.Row="1" Grid.Column="1" Content="{Binding Workspace}"></Label>
+
+                <Label Margin="5" Grid.Row="2" Grid.Column="0">Projects:</Label>
+                <ComboBox Margin="5" Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Projects}" SelectedItem="{Binding SelectedProject}" IsEnabled="{Binding ProjectsEnabled}"></ComboBox>
+
+                <Label Margin="50" Grid.Row="3" Grid.ColumnSpan="2" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Content="{Binding IsWorkStarted}"></Label>
+            </Grid>
+        </StackPanel>
+
+        <Button Grid.Row="2" Grid.ColumnSpan="3" Height="50" Margin="5, 5, 5, 5" Content="{Binding StartButtonName}" Command="{Binding StartCommand}"></Button>
+    </Grid>
+</Window>
