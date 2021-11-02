@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Configuration;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -24,7 +25,19 @@ namespace ClockifyHelper
         {
             InitializeComponent();
 
-            DataContext = new ViewModel();
+            var configurtion = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", optional: true)
+                .AddJsonFile("appsettings.local.json", optional: true)
+                .Build();
+
+            var applicationSettings = new ApplicationSettings()
+            {
+                ApiKey = configurtion["ApplicationSettings:ApiKey"],
+                DefaultProjectName = configurtion["ApplicationSettings:DefaultProjectName"],
+                IdleThresholdMinutes = int.Parse(configurtion["ApplicationSettings:IdleThresholdMinutes"])
+            };
+
+            DataContext = new ViewModel(applicationSettings);
         }
     }
 }

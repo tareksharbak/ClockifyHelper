@@ -37,16 +37,29 @@ namespace ClockifyHelper
         private bool isWorkStarted;
         private int idleThresholdMinutes = 15;
 
-        public ViewModel()
+        public ViewModel(ApplicationSettings applicationSettings)
         {
-            idleTimeService = new IdleTimeService(TimeSpan.FromMinutes(idleThresholdMinutes));
+            idleTimeService = new IdleTimeService(TimeSpan.FromMinutes(applicationSettings.IdleThresholdMinutes));
             idleTimeService.UserIdled += IdleTimeService_UserIdled;
             idleTimeService.UserReactivated += IdleTimeService_UserReactivated;
 
+            ApiKeyTextBox = applicationSettings.ApiKey;
+
+            ConfigureCommands(applicationSettings);
+
+            if (!string.IsNullOrWhiteSpace(apiKeyTextBox))
+            {
+                SaveCommand.Execute(true);
+            }
+        }
+
+        private void ConfigureCommands(ApplicationSettings applicationSettings)
+        {
             SaveCommand = new ObservableCommand<ViewModel>(
                 this,
                 execute: async (x) =>
                 {
+                    var isInInitializationPhase = (x as bool?) ?? false;
                     try
                     {
                         clockifyService?.Dispose();
@@ -62,13 +75,18 @@ namespace ClockifyHelper
 
                         Projects = await clockifyService.GetProjectsAsync(workspaceId);
 
+                        SelectedProject = Projects.SingleOrDefault(a => a.Name == applicationSettings.DefaultProjectName);
+
                         SavedApiKey = apiKeyTextBox;
                         IsApiKeySaved = true;
                         ApiKeyTextBox = hiddenCharacter + string.Join("", Enumerable.Range(0, apiKeyTextBox.Length).Select(a => "*"));
                     }
                     catch (Exception)
                     {
-                        MessageBox.Show("Invalid Key", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        if (!isInInitializationPhase)
+                        {
+                            MessageBox.Show("Invalid Key", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        }
 
                         IsApiKeySaved = false;
                     }
