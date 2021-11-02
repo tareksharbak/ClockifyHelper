@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ClockifyHelper" d:DataContext="{d:DesignInstance Type=local:ViewModel}"
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Clockify Helper" Height="450" Width="800">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
@@ -63,7 +63,7 @@
 
                 <StackPanel Margin="50" Grid.Row="4" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal">
                     <Label Content="Time Tracking On:"></Label>
-                    <Label Content="{Binding IsWorkStarted}"></Label>
+                    <Label Content="{Binding IsWorkRunning}"></Label>
                 </StackPanel>
                 
             </Grid>

@@ -38,7 +38,7 @@ namespace ClockifyHelper
 
         private bool isStarted;
 
-        private bool isWorkStarted;
+        private bool isWorkRunning;
         private int idleThresholdMinutes = 15;
 
         private Timer trackingUpdateTimer;
@@ -58,9 +58,21 @@ namespace ClockifyHelper
 
             ConfigureCommands(applicationSettings);
 
+            _ = AutoStartAsync();
+        }
+
+        private async Task AutoStartAsync()
+        {
             if (!string.IsNullOrWhiteSpace(apiKeyTextBox))
             {
                 SaveCommand.Execute(true);
+
+                await Task.Delay(5000);
+
+                if (!IsStarted && StartCommand.CanExecute(null))
+                {
+                    StartCommand.Execute(true);
+                }
             }
         }
 
@@ -127,17 +139,28 @@ namespace ClockifyHelper
             StartCommand = new ObservableCommand<ViewModel>(this,
                 execute: async (x) =>
                 {
-                    if (!isStarted)
+                    var isInInitializationPhase = (x as bool?) ?? false;
+                    try
                     {
-                        await StartOrUpdateActiveTimeTrackingAsync();
-                        idleTimeService.Start();
+                        if (!isStarted)
+                        {
+                            await StartOrUpdateActiveTimeTrackingAsync();
+                            idleTimeService.Start();
+                        }
+                        else
+                        {
+                            await StopActiveTimeTrackingAsync();
+                            idleTimeService.Stop();
+                        }
+                        IsStarted = !IsStarted;
                     }
-                    else
+                    catch (Exception)
                     {
-                        await StopActiveTimeTrackingAsync();
-                        idleTimeService.Stop();
+                        if (!isInInitializationPhase)
+                        {
+                            MessageBox.Show("Something went wrong", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
                     }
-                    IsStarted = !IsStarted;
                 },
                 canExecute: (x) =>
                 {
@@ -162,7 +185,7 @@ namespace ClockifyHelper
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                IsWorkStarted = true;
+                IsWorkRunning = true;
             });
             trackingUpdateTimer.Start();
         }
@@ -178,7 +201,7 @@ namespace ClockifyHelper
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                IsWorkStarted = false;
+                IsWorkRunning = false;
             });
             trackingUpdateTimer.Stop();
         }
@@ -273,12 +296,12 @@ namespace ClockifyHelper
             }
         }
 
-        public bool IsWorkStarted
+        public bool IsWorkRunning
         {
-            get => isWorkStarted;
+            get => isWorkRunning;
             set
             {
-                SetProperty(ref isWorkStarted, value);
+                SetProperty(ref isWorkRunning, value);
             }
         }
 
