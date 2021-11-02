@@ -6,17 +6,18 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
-namespace ClockifyHelper
+namespace ClockifyHelper.Commands
 {
     public class ObservableCommand<T> : ICommand where T : INotifyPropertyChanged
     {
         Predicate<object> predicate;
         Action<object> execute;
+
         public ObservableCommand(T model, Action<object> execute, Predicate<object> canExecute)
         {
             model.PropertyChanged += ModelChanged;
             this.execute = execute;
-            this.predicate = canExecute;
+            predicate = canExecute;
         }
 
         public event EventHandler CanExecuteChanged;

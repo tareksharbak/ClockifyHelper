@@ -8,7 +8,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace ClockifyHelper
+namespace ClockifyHelper.Services
 {
     public class ClockifyService : IDisposable
     {
@@ -138,7 +138,7 @@ namespace ClockifyHelper
             var response = await httpClient.GetAsync($"api/v1/workspaces/{workspaceId}/user/{userId}/time-entries?start={todayStartDateUtc}");
             response.EnsureSuccessStatusCode();
 
-            if(response.StatusCode == HttpStatusCode.NoContent)
+            if (response.StatusCode == HttpStatusCode.NoContent)
             {
                 return null;
             }

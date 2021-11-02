@@ -1,4 +1,6 @@
 ﻿using ClockifyHelper.ClockifyModels;
+using ClockifyHelper.Commands;
+using ClockifyHelper.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

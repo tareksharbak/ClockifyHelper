@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ClockifyHelper.Helpers;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -6,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 
-namespace ClockifyHelper
+namespace ClockifyHelper.Services
 {
     public class IdleTimeService : IDisposable
     {
@@ -109,7 +110,7 @@ namespace ClockifyHelper
                         timer.Elapsed -= Timer_Elapsed;
                     }
                     catch { }
-                    
+
                     timer?.Dispose();
                 }
                 catch { }
