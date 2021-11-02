@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Media;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
@@ -14,7 +15,8 @@ namespace ClockifyHelper
 {
     public class ViewModel : ViewModelBase
     {
-        private string hiddenCharacter = " *";
+        private const string HiddenCharacter = " *";
+        private const int BufferEndTimeMinutes = 2;
 
         private IdleTimeService idleTimeService;
 
@@ -37,11 +39,18 @@ namespace ClockifyHelper
         private bool isWorkStarted;
         private int idleThresholdMinutes = 15;
 
+        private Timer trackingUpdateTimer;
+
+
         public ViewModel(ApplicationSettings applicationSettings)
         {
             idleTimeService = new IdleTimeService(TimeSpan.FromMinutes(applicationSettings.IdleThresholdMinutes));
             idleTimeService.UserIdled += IdleTimeService_UserIdled;
             idleTimeService.UserReactivated += IdleTimeService_UserReactivated;
+
+            trackingUpdateTimer = new Timer(TimeSpan.FromMinutes(applicationSettings.IdleThresholdMinutes).TotalMilliseconds);
+            trackingUpdateTimer.Elapsed += TrackingUpdateTimer_Elapsed;
+            trackingUpdateTimer.AutoReset = true;
 
             ApiKeyTextBox = applicationSettings.ApiKey;
 
@@ -79,7 +88,7 @@ namespace ClockifyHelper
 
                         SavedApiKey = apiKeyTextBox;
                         IsApiKeySaved = true;
-                        ApiKeyTextBox = hiddenCharacter + string.Join("", Enumerable.Range(0, apiKeyTextBox.Length).Select(a => "*"));
+                        ApiKeyTextBox = HiddenCharacter + string.Join("", Enumerable.Range(0, apiKeyTextBox.Length).Select(a => "*"));
                     }
                     catch (Exception)
                     {
@@ -93,7 +102,7 @@ namespace ClockifyHelper
                 },
                 canExecute: (x) =>
                 {
-                    var canExecute = ApiKeyTextBox != SavedApiKey && !ApiKeyTextBox.StartsWith(hiddenCharacter);
+                    var canExecute = ApiKeyTextBox != SavedApiKey && !ApiKeyTextBox.StartsWith(HiddenCharacter);
                     return canExecute;
                 });
 
@@ -109,7 +118,7 @@ namespace ClockifyHelper
             {
                 if (IsApiKeySaved)
                 {
-                    ApiKeyTextBox = hiddenCharacter + string.Join("", Enumerable.Range(0, apiKeyTextBox.Length).Select(a => "*"));
+                    ApiKeyTextBox = HiddenCharacter + string.Join("", Enumerable.Range(0, apiKeyTextBox.Length).Select(a => "*"));
                 }
             });
 
@@ -118,13 +127,13 @@ namespace ClockifyHelper
                 {
                     if (!isStarted)
                     {
+                        await StartOrUpdateActiveTimeTrackingAsync();
                         idleTimeService.Start();
-                        await StartWorkAsync();
                     }
                     else
                     {
+                        await StopActiveTimeTrackingAsync();
                         idleTimeService.Stop();
-                        await StopWorkAsync();
                     }
                     IsStarted = !IsStarted;
                 },
@@ -134,26 +143,64 @@ namespace ClockifyHelper
                 });
         }
 
+        private async Task StartOrUpdateActiveTimeTrackingAsync()
+        {
+            var activeTimeTracking = await clockifyService.GetCurrentlyActiveTime(userId, workspaceId);
+
+            if (activeTimeTracking == null)
+            {
+                Debug.WriteLine("Starting active time tracking");
+                await clockifyService.CreateTimeAsync(workspaceId, DateTime.UtcNow, GetPotentialEndTime(), selectedProject.Id);
+            }
+            else
+            {
+                Debug.WriteLine("Updating active time tracking");
+                await clockifyService.UpdateEndTimeAsync(workspaceId, activeTimeTracking, GetPotentialEndTime());
+            }
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                IsWorkStarted = true;
+            });
+            trackingUpdateTimer.Start();
+        }
+
+        private async Task StopActiveTimeTrackingAsync()
+        {
+            Debug.WriteLine("Stopping active time tracking");
+            var activeTimeTracking = await clockifyService.GetCurrentlyActiveTime(userId, workspaceId);
+            if (activeTimeTracking != null)
+            {
+                await clockifyService.UpdateEndTimeAsync(workspaceId, activeTimeTracking, DateTime.UtcNow);
+            }
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                IsWorkStarted = false;
+            });
+            trackingUpdateTimer.Stop();
+        }
+
+        private DateTime GetPotentialEndTime()
+        {
+            return DateTime.UtcNow.AddMinutes(IdleThresholdMinutes + BufferEndTimeMinutes);
+        }
+
+        private async void TrackingUpdateTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            await StartOrUpdateActiveTimeTrackingAsync();
+        }
+
         private async void IdleTimeService_UserReactivated(object sender, EventArgs e)
         {
-            await StartWorkAsync();
+            //SystemSounds.Beep.Play();
+            await StartOrUpdateActiveTimeTrackingAsync();
         }
 
         private async void IdleTimeService_UserIdled(object sender, EventArgs e)
         {
-            await StopWorkAsync();
-        }
-
-        private async Task StartWorkAsync()
-        {
-            await clockifyService.StartTimerAsync(workspaceId, selectedProject.Id).ConfigureAwait(true);
-            Application.Current.Dispatcher.Invoke(() => IsWorkStarted = true);
-        }
-
-        private async Task StopWorkAsync()
-        {
-            await clockifyService.StopTimerAsync(userId, workspaceId).ConfigureAwait(true);
-            Application.Current.Dispatcher.Invoke(() => IsWorkStarted = false);
+            //SystemSounds.Exclamation.Play();
+            await StopActiveTimeTrackingAsync();
         }
 
         public int IdleThresholdMinutes
@@ -163,6 +210,7 @@ namespace ClockifyHelper
             {
                 SetProperty(ref idleThresholdMinutes, value);
                 idleTimeService.ChangeIdleTimeThreshold(TimeSpan.FromMinutes(value));
+                trackingUpdateTimer.Interval = TimeSpan.FromMinutes(value).TotalMilliseconds;
             }
         }
 

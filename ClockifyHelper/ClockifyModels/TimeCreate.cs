@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ClockifyHelper.ClockifyModels
 {
-    public class Time
+    public class TimeCreate
     {
         [JsonPropertyName("start")]
         public DateTime Start { get; set; }

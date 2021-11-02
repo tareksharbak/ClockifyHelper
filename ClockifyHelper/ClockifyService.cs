@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -61,7 +62,7 @@ namespace ClockifyHelper
 
         public async Task StartTimerAsync(string workspaceId, string projectId = null)
         {
-            var time = new Time()
+            var time = new TimeCreate()
             {
                 Start = DateTime.UtcNow,
                 ProjectId = projectId
@@ -84,6 +85,71 @@ namespace ClockifyHelper
 
             var response = await httpClient.PatchAsync($"api/v1/workspaces/{workspaceId}/user/{userId}/time-entries", stringContent);
             response.EnsureSuccessStatusCode();
+        }
+
+        public async Task<TimeRead> CreateTimeAsync(string workspaceId, DateTime startTime, DateTime endTime, string projectId = null)
+        {
+            var time = new TimeCreate()
+            {
+                Start = startTime,
+                End = endTime,
+                ProjectId = projectId
+            };
+
+            var stringContent = new StringContent(JsonSerializer.Serialize(time), Encoding.UTF8, "application/json");
+
+            var response = await httpClient.PostAsync($"api/v1/workspaces/{workspaceId}/time-entries", stringContent);
+            response.EnsureSuccessStatusCode();
+
+            var content = await response.Content.ReadAsStringAsync();
+
+            var result = JsonSerializer.Deserialize<TimeRead>(content);
+
+            return result;
+        }
+
+        public async Task<TimeRead> UpdateEndTimeAsync(string workspaceId, TimeRead time, DateTime endTime)
+        {
+            var timeCreate = new TimeCreate()
+            {
+                Start = time.TimeInterval.Start,
+                Description = time.Description,
+                TaskId = time.TaskId,
+                ProjectId = time.ProjectId,
+                End = endTime
+            };
+
+            var stringContent = new StringContent(JsonSerializer.Serialize(timeCreate), Encoding.UTF8, "application/json");
+
+            var response = await httpClient.PutAsync($"api/v1/workspaces/{workspaceId}/time-entries/{time.Id}", stringContent);
+            response.EnsureSuccessStatusCode();
+
+            var content = await response.Content.ReadAsStringAsync();
+
+            var result = JsonSerializer.Deserialize<TimeRead>(content);
+
+            return result;
+        }
+
+        public async Task<TimeRead> GetCurrentlyActiveTime(string userId, string workspaceId)
+        {
+            var todayStartDateUtc = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day).ToString("yyyy-MM-ddTHH:mm:ssZ");
+
+            var response = await httpClient.GetAsync($"api/v1/workspaces/{workspaceId}/user/{userId}/time-entries?start={todayStartDateUtc}");
+            response.EnsureSuccessStatusCode();
+
+            if(response.StatusCode == HttpStatusCode.NoContent)
+            {
+                return null;
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+
+            var times = JsonSerializer.Deserialize<TimeRead[]>(content);
+
+            var currentlyActiveTimes = times.Where(a => a.TimeInterval.End > DateTime.UtcNow);
+
+            return currentlyActiveTimes.FirstOrDefault();
         }
 
         public void Dispose()
