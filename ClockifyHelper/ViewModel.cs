@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Threading;
 
 namespace ClockifyHelper
 {
@@ -43,6 +42,9 @@ namespace ClockifyHelper
 
         private Timer trackingUpdateTimer;
 
+        private int autoStartCountDown;
+        private System.Threading.CancellationTokenSource autoStartCancellation;
+
 
         public ViewModel(ApplicationSettings applicationSettings)
         {
@@ -67,11 +69,34 @@ namespace ClockifyHelper
             {
                 SaveCommand.Execute(true);
 
-                await Task.Delay(5000);
+                AutoStartCountDown = 5;
+                autoStartCancellation = new System.Threading.CancellationTokenSource();
 
-                if (!IsStarted && StartCommand.CanExecute(null))
+                try
                 {
-                    StartCommand.Execute(true);
+                    while (AutoStartCountDown > 0 && !autoStartCancellation.IsCancellationRequested)
+                    {
+                        await Task.Delay(1000, autoStartCancellation.Token);
+
+                        AutoStartCountDown--;
+                    }
+
+                    if (autoStartCancellation.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    if (!IsStarted && StartCommand.CanExecute(null))
+                    {
+                        StartCommand.Execute(true);
+                    }
+                }
+                catch (TaskCanceledException) { }
+                finally
+                {
+                    AutoStartCountDown = 0;
+                    autoStartCancellation?.Dispose();
+                    autoStartCancellation = null;
                 }
             }
         }
@@ -142,6 +167,12 @@ namespace ClockifyHelper
                     var isInInitializationPhase = (x as bool?) ?? false;
                     try
                     {
+                        if (IsAutoStarting)
+                        {
+                            autoStartCancellation?.Cancel();
+                            return;
+                        }
+
                         if (!isStarted)
                         {
                             await StartOrUpdateActiveTimeTrackingAsync();
@@ -269,7 +300,8 @@ namespace ClockifyHelper
         {
             get
             {
-                return IsStarted ? "Stop" : "Activate";
+                return IsAutoStarting ? $"Auto starting in {AutoStartCountDown} seconds" : 
+                    IsStarted ? "Stop" : "Activate";
             }
         }
 
@@ -293,6 +325,21 @@ namespace ClockifyHelper
                 NotifyPropertyChanged(nameof(ProjectsEnabled));
                 NotifyPropertyChanged(nameof(StartButtonName));
                 NotifyPropertyChanged(nameof(ApiKeyTextBoxEnabled));
+            }
+        }
+
+        private bool IsAutoStarting
+        {
+            get => AutoStartCountDown > 0;
+        }
+
+        private int AutoStartCountDown
+        {
+            get => autoStartCountDown;
+            set
+            {
+                SetProperty(ref autoStartCountDown, value);
+                NotifyPropertyChanged(nameof(StartButtonName));
             }
         }
 

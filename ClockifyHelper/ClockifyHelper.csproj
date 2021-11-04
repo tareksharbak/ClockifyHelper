@@ -9,6 +9,7 @@
   <ItemGroup>
     <None Remove="appsettings.json" />
     <None Remove="appsettings.local.json" />
+    <None Remove="Diflexmo_logo.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,6 +25,10 @@
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.37" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Diflexmo_logo.png" />
   </ItemGroup>
 
 </Project>

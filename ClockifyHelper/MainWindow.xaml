@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ClockifyHelper" d:DataContext="{d:DesignInstance Type=local:ViewModel}"
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         mc:Ignorable="d"
-        Title="Clockify Helper" Height="450" Width="800">
+        Title="Clockify Helper" Height="450" Width="800" Icon="/Diflexmo_logo.png">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
