@@ -19,7 +19,8 @@ namespace ClockifyHelper
         private const string HiddenCharacter = " *";
         private const int BufferEndTimeMinutes = 2;
         private const int autoStartWaitSeconds = 10;
-        private const int failRetry = 3;
+        private const int failRetry = 4;
+        private const int failDelaySeconds = 3;
 
 
         private IdleTimeService idleTimeService;
@@ -270,7 +271,7 @@ namespace ClockifyHelper
                     if (retries > 0)
                     {
                         Log("Failed. Retrying");
-                        await Task.Delay(1000);
+                        await Task.Delay(TimeSpan.FromSeconds(failDelaySeconds));
                     }
                     else
                     {
@@ -300,7 +301,7 @@ namespace ClockifyHelper
                     if (retries > 0)
                     {
                         Log("Failed. Retrying");
-                        await Task.Delay(1000);
+                        await Task.Delay(TimeSpan.FromSeconds(failDelaySeconds));
                     }
                     else
                     {
@@ -330,7 +331,7 @@ namespace ClockifyHelper
                     if (retries > 0)
                     {
                         Log("Failed. Retrying");
-                        await Task.Delay(1000);
+                        await Task.Delay(TimeSpan.FromSeconds(failDelaySeconds));
                     }
                     else
                     {
