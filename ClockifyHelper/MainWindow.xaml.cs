@@ -30,13 +30,31 @@ namespace ClockifyHelper
         public MainWindow()
         {
             InitializeComponent();
+            applicationSettings = InitializeApplicationSettings();
+            DataContext = new ViewModel(applicationSettings);
 
+            if (applicationSettings.MinimizeOnClose && !applicationSettings.ShowInSystemTray)
+            {
+                MessageBox.Show("MinimizeOnClose is set to true while ShowInSystemTray is set to False." +
+                    " There will be no way to shutdown the application. The setting for showing System Tray Icon will be overriden", "Configuration Error", MessageBoxButton.OK);
+
+                applicationSettings.ShowInSystemTray = true;
+            }
+
+            if (applicationSettings.ShowInSystemTray)
+            {
+                ConfigureSystemTrayIcon();
+            }
+        }
+
+        private ApplicationSettings InitializeApplicationSettings()
+        {
             var configurtion = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", optional: true)
+                .AddJsonFile("appsettings.json")
                 .AddJsonFile("appsettings.local.json", optional: true)
                 .Build();
 
-            applicationSettings = new ApplicationSettings()
+            return new ApplicationSettings()
             {
                 ApiKey = configurtion["ApplicationSettings:ApiKey"],
                 DefaultProjectName = configurtion["ApplicationSettings:DefaultProjectName"],
@@ -44,44 +62,38 @@ namespace ClockifyHelper
                 MinimizeOnClose = bool.Parse(configurtion["ApplicationSettings:MinimizeOnClose"]),
                 ShowInSystemTray = bool.Parse(configurtion["ApplicationSettings:ShowInSystemTray"])
             };
-
-            if (applicationSettings.MinimizeOnClose && !applicationSettings.ShowInSystemTray)
-            {
-                MessageBox.Show("MinimizeOnClose is set to true while ShowInSystemTray is set to False." +
-                    " There will be no way to shutdown the application. The setting for System Tray will be overriden", "Configuration Error", MessageBoxButton.OK);
-
-                applicationSettings.ShowInSystemTray = true;
-            }
-
-            DataContext = new ViewModel(applicationSettings);
-
-            if (applicationSettings.ShowInSystemTray)
-            {
-                System.ComponentModel.IContainer container = new System.ComponentModel.Container();
-                notifyIcon = new System.Windows.Forms.NotifyIcon(container);
-                notifyIcon.Icon = new System.Drawing.Icon("./Assets/Diflexmo_logo.ico");
-                notifyIcon.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(MyNotifyIcon_MouseDoubleClick);
-
-                var contextMenu = new System.Windows.Forms.ContextMenuStrip();
-
-                var menuItem = new System.Windows.Forms.ToolStripMenuItem();
-                menuItem.Text = "E&xit";
-                menuItem.Click += ExitClick;
-                contextMenu.Items.AddRange(new System.Windows.Forms.ToolStripMenuItem[] { menuItem });
-
-                notifyIcon.ContextMenuStrip = contextMenu;
-
-                notifyIcon.Visible = true;
-            }
         }
 
-        private void ExitClick(object sender, EventArgs e)
+        private void ConfigureSystemTrayIcon()
+        {
+            notifyIcon = new System.Windows.Forms.NotifyIcon();
+            notifyIcon.Icon = new System.Drawing.Icon("./Assets/Diflexmo_logo.ico");
+            notifyIcon.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
+
+            notifyIcon.ContextMenuStrip = ConfigureContextMenuStrip();
+
+            notifyIcon.Visible = true;
+        }
+
+        private System.Windows.Forms.ContextMenuStrip ConfigureContextMenuStrip()
+        {
+            var contextMenu = new System.Windows.Forms.ContextMenuStrip();
+
+            var menuItem = new System.Windows.Forms.ToolStripMenuItem();
+            menuItem.Text = "E&xit";
+            menuItem.Click += ExitClicked;
+            contextMenu.Items.AddRange(new System.Windows.Forms.ToolStripMenuItem[] { menuItem });
+
+            return contextMenu;
+        }
+
+        private void ExitClicked(object sender, EventArgs e)
         {
             forceExit = true;
             Close();
         }
 
-        private void MyNotifyIcon_MouseDoubleClick(object sender, System.Windows.Forms.MouseEventArgs e)
+        private void NotifyIcon_MouseDoubleClick(object sender, System.Windows.Forms.MouseEventArgs e)
         {
             WindowState = WindowState.Normal;
             Activate();
