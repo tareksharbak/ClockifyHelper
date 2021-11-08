@@ -11,5 +11,7 @@ namespace ClockifyHelper
         public string ApiKey { get; set; }
         public string DefaultProjectName { get; set; }
         public int IdleThresholdMinutes { get; set; }
+        public bool ShowInSystemTray { get; set; }
+        public bool MinimizeOnClose { get; set; }
     }
 }
