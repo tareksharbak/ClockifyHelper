@@ -15,7 +15,8 @@ namespace ClockifyHelper.Services
 
         private const double timerInterval = 10 * 1000;
         private uint? baseLine;
-        private uint timeSinceBaseLine;
+
+        private DateTime idleSince = DateTime.UtcNow;
 
         private TimeSpan idleTimeThreshold = TimeSpan.FromMinutes(1);
 
@@ -48,6 +49,9 @@ namespace ClockifyHelper.Services
 
         public void Start()
         {
+            Win32.GetLastInputInfo(out lastInputBuffer);
+            baseLine = lastInputBuffer.dwTime;
+            idleSince = DateTime.UtcNow;
             timer.Start();
         }
 
@@ -60,37 +64,47 @@ namespace ClockifyHelper.Services
         {
             Win32.GetLastInputInfo(out lastInputBuffer);
 
-            if (lastInputBuffer.dwTime != baseLine)
-            {
-                baseLine = lastInputBuffer.dwTime;
-                timeSinceBaseLine = baseLine.Value;
-            }
-            else
-            {
-                timeSinceBaseLine += (uint)timerInterval;
-            }
+            var idleTime = DateTime.UtcNow - idleSince;
 
-            var idleTime = timeSinceBaseLine - baseLine.Value;
-            var idleTimeSpan = TimeSpan.FromMilliseconds(idleTime);
-
-            if (idleTimeSpan >= idleTimeThreshold)
+            if (idleTime >= idleTimeThreshold)
             {
+                ViewModel.Instance.Log($"Idle threshold exceeded");
+
                 if (!isIdle)
                 {
-                    isIdle = true;
-                    UserIdled?.Invoke(this, EventArgs.Empty);
+                    if (lastInputBuffer.dwTime != baseLine)
+                    {
+                        //user was idle (but wasn't detected) and now reactivated
+                        ViewModel.Instance.Log($"User was idle (but not detected) and now reactivated");
+                        UserReactivated?.Invoke(this, EventArgs.Empty);
+                    }
+                    else
+                    {
+                        ViewModel.Instance.Log($"User has gone idle");
+                        isIdle = true;
+                        UserIdled?.Invoke(this, EventArgs.Empty);
+                    }
                 }
             }
             else
             {
                 if (isIdle)
                 {
+                    ViewModel.Instance.Log($"User was idle and now reactivated");
+
                     isIdle = false;
                     UserReactivated?.Invoke(this, EventArgs.Empty);
                 }
             }
 
-            Debug.WriteLine($"User been idle for {Math.Round(idleTimeSpan.TotalSeconds, 2)} seconds");
+            if (lastInputBuffer.dwTime != baseLine)
+            {
+                baseLine = lastInputBuffer.dwTime;
+                idleSince = DateTime.UtcNow;
+            }
+
+            idleTime = DateTime.UtcNow - idleSince;
+            Debug.WriteLine($"User been idle for {Math.Round(idleTime.TotalSeconds, 2)} seconds");
         }
 
         public void Dispose()

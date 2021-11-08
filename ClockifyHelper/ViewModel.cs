@@ -18,6 +18,8 @@ namespace ClockifyHelper
     {
         private const string HiddenCharacter = " *";
         private const int BufferEndTimeMinutes = 2;
+        private const int autoStartWaitSeconds = 10;
+        private const int failRetry = 3;
 
         private IdleTimeService idleTimeService;
 
@@ -44,7 +46,11 @@ namespace ClockifyHelper
 
         private int autoStartCountDown;
         private System.Threading.CancellationTokenSource autoStartCancellation;
+        private List<string> logs = new List<string>();
+        private object logLock = new object();
 
+
+        public static ViewModel Instance;
 
         public ViewModel(ApplicationSettings applicationSettings)
         {
@@ -61,6 +67,8 @@ namespace ClockifyHelper
             ConfigureCommands(applicationSettings);
 
             _ = AutoStartAsync();
+
+            Instance = this;
         }
 
         private async Task AutoStartAsync()
@@ -69,7 +77,7 @@ namespace ClockifyHelper
             {
                 SaveCommand.Execute(true);
 
-                AutoStartCountDown = 5;
+                AutoStartCountDown = autoStartWaitSeconds;
                 autoStartCancellation = new System.Threading.CancellationTokenSource();
 
                 try
@@ -205,12 +213,12 @@ namespace ClockifyHelper
 
             if (activeTimeTracking == null)
             {
-                Debug.WriteLine("Starting active time tracking");
+                Log("Starting active time tracking");
                 await clockifyService.CreateTimeAsync(workspaceId, DateTime.UtcNow, GetPotentialEndTime(), selectedProject.Id);
             }
             else
             {
-                Debug.WriteLine("Updating active time tracking");
+                Log("Updating active time tracking");
                 await clockifyService.UpdateEndTimeAsync(workspaceId, activeTimeTracking, GetPotentialEndTime());
             }
 
@@ -223,7 +231,7 @@ namespace ClockifyHelper
 
         private async Task StopActiveTimeTrackingAsync()
         {
-            Debug.WriteLine("Stopping active time tracking");
+            Log("Stopping active time tracking");
             var activeTimeTracking = await clockifyService.GetCurrentlyActiveTime(userId, workspaceId);
             if (activeTimeTracking != null)
             {
@@ -244,19 +252,65 @@ namespace ClockifyHelper
 
         private async void TrackingUpdateTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            await StartOrUpdateActiveTimeTrackingAsync();
+            var retries = failRetry;
+            while (retries > 0)
+            {
+                try
+                {
+                    await StartOrUpdateActiveTimeTrackingAsync();
+                    break;
+                }
+                catch (Exception)
+                {
+                    Log("Failed. Retrying");
+                    retries--;
+                    await Task.Delay(1000);
+                }
+            }
         }
 
         private async void IdleTimeService_UserReactivated(object sender, EventArgs e)
         {
             //SystemSounds.Beep.Play();
-            await StartOrUpdateActiveTimeTrackingAsync();
+            Log("User reactivated event received");
+
+            var retries = failRetry;
+            while (retries > 0)
+            {
+                try
+                {
+                    await StartOrUpdateActiveTimeTrackingAsync();
+                    break;
+                }
+                catch (Exception)
+                {
+                    Log("Failed. Retrying");
+                    retries--;
+                    await Task.Delay(1000);
+                }
+            }
         }
 
         private async void IdleTimeService_UserIdled(object sender, EventArgs e)
         {
             //SystemSounds.Exclamation.Play();
-            await StopActiveTimeTrackingAsync();
+            Log("User idle event received");
+
+            var retries = failRetry;
+            while (retries > 0)
+            {
+                try
+                {
+                    await StopActiveTimeTrackingAsync();
+                    break;
+                }
+                catch (Exception)
+                {
+                    Log("Failed. Retrying");
+                    retries--;
+                    await Task.Delay(1000);
+                }
+            }
         }
 
         public int IdleThresholdMinutes
@@ -300,7 +354,7 @@ namespace ClockifyHelper
         {
             get
             {
-                return IsAutoStarting ? $"Auto starting in {AutoStartCountDown} seconds" : 
+                return IsAutoStarting ? $"Auto starting in {AutoStartCountDown} seconds" :
                     IsStarted ? "Stop" : "Activate";
             }
         }
@@ -401,6 +455,25 @@ namespace ClockifyHelper
             get
             {
                 return !IsStarted;
+            }
+        }
+
+        public string[] Logs
+        {
+            get => logs.ToArray();
+        }
+
+        public void Log(string str)
+        {
+            
+            lock (logLock)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    var datePrefix = DateTime.UtcNow.ToString("s");
+                    logs.Insert(0, datePrefix + " - " + str);
+                    NotifyPropertyChanged(nameof(Logs));
+                });
             }
         }
 

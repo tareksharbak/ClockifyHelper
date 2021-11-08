@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ClockifyHelper" d:DataContext="{d:DesignInstance Type=local:ViewModel}"
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         mc:Ignorable="d"
-        Title="Clockify Helper" Height="450" Width="800" Icon="/Diflexmo_logo.png">
+        Title="Clockify Helper" MinHeight="550" Height="550" Width="800" Icon="/Diflexmo_logo.png">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
@@ -16,6 +16,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
@@ -70,5 +71,9 @@
         </StackPanel>
 
         <Button Grid.Row="2" Grid.ColumnSpan="3" Height="50" Margin="5, 5, 5, 5" Content="{Binding StartButtonName}" Command="{Binding StartCommand}"></Button>
+
+        <Expander Grid.Row="3" Grid.ColumnSpan="3" Header="Logs">
+            <ListBox ItemsSource="{Binding Logs}" MaxHeight="150" Height="150"></ListBox>
+        </Expander>
     </Grid>
 </Window>
