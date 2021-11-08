@@ -21,7 +21,9 @@ namespace ClockifyHelper
         private const int autoStartWaitSeconds = 10;
         private const int failRetry = 3;
 
+
         private IdleTimeService idleTimeService;
+        private readonly Action<string, string> showNotification;
 
         private ClockifyService clockifyService;
         private string apiKeyTextBox;
@@ -49,10 +51,9 @@ namespace ClockifyHelper
         private List<string> logs = new List<string>();
         private object logLock = new object();
 
-
         public static ViewModel Instance;
 
-        public ViewModel(ApplicationSettings applicationSettings)
+        public ViewModel(ApplicationSettings applicationSettings, Action<string, string> showNotification)
         {
             idleTimeService = new IdleTimeService(TimeSpan.FromMinutes(applicationSettings.IdleThresholdMinutes));
             idleTimeService.UserIdled += IdleTimeService_UserIdled;
@@ -69,6 +70,7 @@ namespace ClockifyHelper
             _ = AutoStartAsync();
 
             Instance = this;
+            this.showNotification = showNotification;
         }
 
         private async Task AutoStartAsync()
@@ -215,6 +217,7 @@ namespace ClockifyHelper
             {
                 Log("Starting active time tracking");
                 await clockifyService.CreateTimeAsync(workspaceId, DateTime.UtcNow, GetPotentialEndTime(), selectedProject.Id);
+                showNotification("Time Tracking", "New activity started");
             }
             else
             {
@@ -236,6 +239,7 @@ namespace ClockifyHelper
             if (activeTimeTracking != null)
             {
                 await clockifyService.UpdateEndTimeAsync(workspaceId, activeTimeTracking, DateTime.UtcNow);
+                showNotification("Time Tracking", "Activity ended");
             }
 
             Application.Current.Dispatcher.Invoke(() =>

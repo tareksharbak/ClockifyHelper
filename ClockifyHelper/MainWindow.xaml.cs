@@ -31,7 +31,7 @@ namespace ClockifyHelper
         {
             InitializeComponent();
             applicationSettings = InitializeApplicationSettings();
-            DataContext = new ViewModel(applicationSettings);
+            DataContext = new ViewModel(applicationSettings, ShowNotification);
 
             if (applicationSettings.MinimizeOnClose && !applicationSettings.ShowInSystemTray)
             {
@@ -39,6 +39,13 @@ namespace ClockifyHelper
                     " There will be no way to shutdown the application. The setting for showing System Tray Icon will be overriden", "Configuration Error", MessageBoxButton.OK);
 
                 applicationSettings.ShowInSystemTray = true;
+            }
+
+            if (applicationSettings.EnableNotifications && !applicationSettings.ShowInSystemTray)
+            {
+                MessageBox.Show("Notifications only work if the System Tray icon is also enabled", "Configuration Error", MessageBoxButton.OK);
+
+                applicationSettings.EnableNotifications = false;
             }
 
             if (applicationSettings.ShowInSystemTray)
@@ -60,7 +67,8 @@ namespace ClockifyHelper
                 DefaultProjectName = configurtion["ApplicationSettings:DefaultProjectName"],
                 IdleThresholdMinutes = int.Parse(configurtion["ApplicationSettings:IdleThresholdMinutes"]),
                 MinimizeOnClose = bool.Parse(configurtion["ApplicationSettings:MinimizeOnClose"]),
-                ShowInSystemTray = bool.Parse(configurtion["ApplicationSettings:ShowInSystemTray"])
+                ShowInSystemTray = bool.Parse(configurtion["ApplicationSettings:ShowInSystemTray"]),
+                EnableNotifications = bool.Parse(configurtion["ApplicationSettings:EnableNotifications"]),
             };
         }
 
@@ -127,6 +135,14 @@ namespace ClockifyHelper
                 {
                     notifyIcon.Visible = false;
                 }
+            }
+        }
+
+        private void ShowNotification(string title, string text)
+        {
+            if (applicationSettings.EnableNotifications && notifyIcon != null)
+            {
+                notifyIcon.ShowBalloonTip(1500, title, text, System.Windows.Forms.ToolTipIcon.Info);
             }
         }
     }

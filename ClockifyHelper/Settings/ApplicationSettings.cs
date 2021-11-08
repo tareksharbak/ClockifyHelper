@@ -13,5 +13,6 @@ namespace ClockifyHelper
         public int IdleThresholdMinutes { get; set; }
         public bool ShowInSystemTray { get; set; }
         public bool MinimizeOnClose { get; set; }
+        public bool EnableNotifications { get; set; }
     }
 }
