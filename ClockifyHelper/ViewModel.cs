@@ -23,7 +23,7 @@ namespace ClockifyHelper
 
 
         private IdleTimeService idleTimeService;
-        private readonly Action<string, string> showNotification;
+        private readonly Action<string> showNotification;
 
         private ClockifyService clockifyService;
         private string apiKeyTextBox;
@@ -53,7 +53,7 @@ namespace ClockifyHelper
 
         public static ViewModel Instance;
 
-        public ViewModel(ApplicationSettings applicationSettings, Action<string, string> showNotification)
+        public ViewModel(ApplicationSettings applicationSettings, Action<string> showNotification)
         {
             idleTimeService = new IdleTimeService(TimeSpan.FromMinutes(applicationSettings.IdleThresholdMinutes));
             idleTimeService.UserIdled += IdleTimeService_UserIdled;
@@ -217,7 +217,7 @@ namespace ClockifyHelper
             {
                 Log("Starting active time tracking");
                 await clockifyService.CreateTimeAsync(workspaceId, DateTime.UtcNow, GetPotentialEndTime(), selectedProject.Id);
-                showNotification("Time Tracking", "New activity started");
+                showNotification("New activity started");
             }
             else
             {
@@ -239,7 +239,7 @@ namespace ClockifyHelper
             if (activeTimeTracking != null)
             {
                 await clockifyService.UpdateEndTimeAsync(workspaceId, activeTimeTracking, DateTime.UtcNow);
-                showNotification("Time Tracking", "Activity ended");
+                showNotification("Activity ended");
             }
 
             Application.Current.Dispatcher.Invoke(() =>
@@ -266,9 +266,17 @@ namespace ClockifyHelper
                 }
                 catch (Exception)
                 {
-                    Log("Failed. Retrying");
                     retries--;
-                    await Task.Delay(1000);
+                    if (retries > 0)
+                    {
+                        Log("Failed. Retrying");
+                        await Task.Delay(1000);
+                    }
+                    else
+                    {
+                        Log("Failed to update time tracking.");
+                        showNotification("Failed to update time tracking.");
+                    }
                 }
             }
         }
@@ -288,9 +296,17 @@ namespace ClockifyHelper
                 }
                 catch (Exception)
                 {
-                    Log("Failed. Retrying");
                     retries--;
-                    await Task.Delay(1000);
+                    if (retries > 0)
+                    {
+                        Log("Failed. Retrying");
+                        await Task.Delay(1000);
+                    }
+                    else
+                    {
+                        Log("Failed to resume time tracking.");
+                        showNotification("Failed to resume time tracking.");
+                    }
                 }
             }
         }
@@ -310,9 +326,17 @@ namespace ClockifyHelper
                 }
                 catch (Exception)
                 {
-                    Log("Failed. Retrying");
                     retries--;
-                    await Task.Delay(1000);
+                    if (retries > 0)
+                    {
+                        Log("Failed. Retrying");
+                        await Task.Delay(1000);
+                    }
+                    else
+                    {
+                        Log("Failed to end the time tracking activity.");
+                        showNotification("Failed to end the time tracking activity.");
+                    }
                 }
             }
         }

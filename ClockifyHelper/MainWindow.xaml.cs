@@ -138,11 +138,11 @@ namespace ClockifyHelper
             }
         }
 
-        private void ShowNotification(string title, string text)
+        private void ShowNotification(string text)
         {
             if (applicationSettings.EnableNotifications && notifyIcon != null)
             {
-                notifyIcon.ShowBalloonTip(1500, title, text, System.Windows.Forms.ToolTipIcon.Info);
+                notifyIcon.ShowBalloonTip(1500, "Time Tracking", text, System.Windows.Forms.ToolTipIcon.Info);
             }
         }
     }
