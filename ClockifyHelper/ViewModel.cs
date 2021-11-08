@@ -470,7 +470,7 @@ namespace ClockifyHelper
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    var datePrefix = DateTime.UtcNow.ToString("s");
+                    var datePrefix = DateTime.Now.ToString("s");
                     logs.Insert(0, datePrefix + " - " + str);
                     NotifyPropertyChanged(nameof(Logs));
                 });
