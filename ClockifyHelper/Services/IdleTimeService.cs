@@ -1,4 +1,5 @@
 ﻿using ClockifyHelper.Helpers;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -40,6 +41,21 @@ namespace ClockifyHelper.Services
             timer = new Timer(timerInterval);
             timer.Elapsed += Timer_Elapsed;
             timer.AutoReset = true;
+
+            SystemEvents.SessionSwitch += SystemEvents_SessionSwitch;
+        }
+
+        private void SystemEvents_SessionSwitch(object sender, SessionSwitchEventArgs e)
+        {
+            if (e.Reason == SessionSwitchReason.SessionLogon || e.Reason == SessionSwitchReason.SessionUnlock)
+            {
+                UserReactivated?.Invoke(this, EventArgs.Empty);
+            }
+
+            if (e.Reason == SessionSwitchReason.SessionLogoff || e.Reason == SessionSwitchReason.SessionLock)
+            {
+                UserIdled?.Invoke(this, EventArgs.Empty);
+            }
         }
 
         public void ChangeIdleTimeThreshold(TimeSpan idleTimeThreshold)
@@ -122,6 +138,12 @@ namespace ClockifyHelper.Services
                     try
                     {
                         timer.Elapsed -= Timer_Elapsed;
+                    }
+                    catch { }
+
+                    try
+                    {
+                        SystemEvents.SessionSwitch -= SystemEvents_SessionSwitch;
                     }
                     catch { }
 
