@@ -53,6 +53,9 @@ namespace ClockifyHelper
         private object logLock = new object();
 
         public static ViewModel Instance;
+        private double timeTrackedToday;
+
+        private bool hasTotalHoursExceededBeenNotified = false;
 
         public ViewModel(ApplicationSettings applicationSettings, Action<string> showNotification)
         {
@@ -226,11 +229,31 @@ namespace ClockifyHelper
                 await clockifyService.UpdateEndTimeAsync(workspaceId, activeTimeTracking, GetPotentialEndTime());
             }
 
+            await UpdateTotalTimeTrackedTodayAsync();
+
             Application.Current.Dispatcher.Invoke(() =>
             {
                 IsWorkRunning = true;
             });
             trackingUpdateTimer.Start();
+        }
+
+        private async Task UpdateTotalTimeTrackedTodayAsync()
+        {
+            TimeTrackedToday = (await clockifyService.GetTotalTimeTrackedTodayAsync(userId, workspaceId)).TotalHours;
+
+            if (TimeTrackedToday >= 8)
+            {
+                if (!hasTotalHoursExceededBeenNotified)
+                {
+                    showNotification("Your total hours for today has exceeded 8 hours");
+                }
+                hasTotalHoursExceededBeenNotified = true;
+            }
+            else
+            {
+                hasTotalHoursExceededBeenNotified = false;
+            }
         }
 
         private async Task StopActiveTimeTrackingAsync()
@@ -494,7 +517,7 @@ namespace ClockifyHelper
 
         public void Log(string str)
         {
-            
+
             lock (logLock)
             {
                 Application.Current.Dispatcher.Invoke(() =>
@@ -503,6 +526,15 @@ namespace ClockifyHelper
                     logs.Insert(0, datePrefix + " - " + str);
                     NotifyPropertyChanged(nameof(Logs));
                 });
+            }
+        }
+
+        public double TimeTrackedToday
+        {
+            get => timeTrackedToday;
+            set
+            {
+                SetProperty(ref timeTrackedToday, Math.Round(value, 1));
             }
         }
 

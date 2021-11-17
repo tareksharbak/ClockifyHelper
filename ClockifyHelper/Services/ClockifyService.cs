@@ -131,7 +131,7 @@ namespace ClockifyHelper.Services
             return result;
         }
 
-        public async Task<TimeRead> GetCurrentlyActiveTime(string userId, string workspaceId)
+        private async Task<TimeRead[]> GetTodayTimeTrackingAsync(string userId, string workspaceId)
         {
             var todayStartDateUtc = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day).ToString("yyyy-MM-ddTHH:mm:ssZ");
 
@@ -140,14 +140,43 @@ namespace ClockifyHelper.Services
 
             if (response.StatusCode == HttpStatusCode.NoContent)
             {
-                return null;
+                return Array.Empty<TimeRead>();
             }
 
             var content = await response.Content.ReadAsStringAsync();
 
             var times = JsonSerializer.Deserialize<TimeRead[]>(content);
 
-            var currentlyActiveTimes = times.Where(a => a.TimeInterval.End > DateTime.UtcNow);
+            return times;
+        }
+
+        public async Task<TimeSpan> GetTotalTimeTrackedTodayAsync(string userId, string workspaceId)
+        {
+            var total = TimeSpan.Zero;
+
+            var timesOfToday = await GetTodayTimeTrackingAsync(userId, workspaceId);
+
+            timesOfToday
+                .Where(time => time.TimeInterval.End.HasValue)
+                .ToList()
+                .ForEach(time =>
+                {
+                    total = total.Add(time.TimeInterval.End.Value - time.TimeInterval.Start);
+                });
+
+            return total;
+        }
+
+        public async Task<TimeRead> GetCurrentlyActiveTime(string userId, string workspaceId)
+        {
+            var timesOfToday = await GetTodayTimeTrackingAsync(userId, workspaceId);
+
+            if (timesOfToday.Length == 0)
+            {
+                return null;
+            }
+
+            var currentlyActiveTimes = timesOfToday.Where(a => a.TimeInterval.End > DateTime.UtcNow);
 
             return currentlyActiveTimes.FirstOrDefault();
         }

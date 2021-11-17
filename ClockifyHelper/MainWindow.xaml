@@ -64,11 +64,18 @@
                 <TextBox Margin="5" Grid.Row="3" Grid.Column="1" Text="{Binding IdleThresholdMinutes, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding ProjectsEnabled}"></TextBox>
                 <Label Margin="5" Grid.Row="3" Grid.Column="2">Minutes</Label>
 
-                <StackPanel Margin="50" Grid.Row="4" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal">
-                    <Label Content="Time Tracking On:"></Label>
-                    <Label Content="{Binding IsWorkRunning}"></Label>
+                <StackPanel Margin="50" Grid.Row="4" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center" >
+                    <StackPanel Orientation="Horizontal">
+                        <Label Content="Time Tracking On:"></Label>
+                        <Label Content="{Binding IsWorkRunning}"></Label>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Label Content="Time Tracked Today: "></Label>
+                        <Label Content="{Binding TimeTrackedToday}"></Label>
+                        <Label Content="Hours"></Label>
+                    </StackPanel>
                 </StackPanel>
-                
+
             </Grid>
         </StackPanel>
 
