@@ -28,6 +28,8 @@ namespace ClockifyHelper.Services
         public event EventHandler UserIdled;
         public event EventHandler UserReactivated;
 
+        private bool isStarted;
+
         public IdleTimeService(TimeSpan idleTimeThreshold)
         {
             if (idleTimeThreshold == TimeSpan.Zero)
@@ -47,6 +49,11 @@ namespace ClockifyHelper.Services
 
         private void SystemEvents_SessionSwitch(object sender, SessionSwitchEventArgs e)
         {
+            if (!isStarted)
+            {
+                return;
+            }
+
             if (e.Reason == SessionSwitchReason.SessionLogon || e.Reason == SessionSwitchReason.SessionUnlock)
             {
                 UserReactivated?.Invoke(this, EventArgs.Empty);
@@ -69,11 +76,13 @@ namespace ClockifyHelper.Services
             baseLine = lastInputBuffer.dwTime;
             idleSince = DateTime.UtcNow;
             timer.Start();
+            isStarted = true;
         }
 
         public void Stop()
         {
             timer.Stop();
+            isStarted = false;
         }
 
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
@@ -84,19 +93,19 @@ namespace ClockifyHelper.Services
 
             if (idleTime >= idleTimeThreshold)
             {
-                ViewModel.Instance.Log($"Idle threshold exceeded");
+                ViewModel.Instance?.Log($"Idle threshold exceeded");
 
                 if (!isIdle)
                 {
                     if (lastInputBuffer.dwTime != baseLine)
                     {
                         //user was idle (but wasn't detected) and now reactivated
-                        ViewModel.Instance.Log($"User was idle (but not detected) and now reactivated");
+                        ViewModel.Instance?.Log($"User was idle (but not detected) and now reactivated");
                         UserReactivated?.Invoke(this, EventArgs.Empty);
                     }
                     else
                     {
-                        ViewModel.Instance.Log($"User has gone idle");
+                        ViewModel.Instance?.Log($"User has gone idle");
                         isIdle = true;
                         UserIdled?.Invoke(this, EventArgs.Empty);
                     }
@@ -106,7 +115,7 @@ namespace ClockifyHelper.Services
             {
                 if (isIdle)
                 {
-                    ViewModel.Instance.Log($"User was idle and now reactivated");
+                    ViewModel.Instance?.Log($"User was idle and now reactivated");
 
                     isIdle = false;
                     UserReactivated?.Invoke(this, EventArgs.Empty);

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net5.0-windows</TargetFramework>
+    <TargetFramework>net6.0-windows</TargetFramework>
 	<UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
   </PropertyGroup>
@@ -12,6 +12,7 @@
     <None Remove="appsettings.local.json" />
     <None Remove="Assets\Diflexmo_logo.ico" />
     <None Remove="Assets\Diflexmo_logo.png" />
+    <None Remove="Assets\Diflexmo_logo_active.ico" />
     <None Remove="Diflexmo_logo.png" />
   </ItemGroup>
 
@@ -20,6 +21,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="appsettings.local.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Diflexmo_logo_active.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Assets\Diflexmo_logo.ico">

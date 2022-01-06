@@ -17,133 +17,156 @@ using System.Windows.Shapes;
 
 namespace ClockifyHelper
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
-    public partial class MainWindow : Window
-    {
-        private System.Windows.Forms.NotifyIcon notifyIcon;
-        private readonly ApplicationSettings applicationSettings;
+	/// <summary>
+	/// Interaction logic for MainWindow.xaml
+	/// </summary>
+	public partial class MainWindow : Window
+	{
+		private System.Windows.Forms.NotifyIcon notifyIcon;
+		private readonly ApplicationSettings applicationSettings;
 
-        private bool forceExit;
+		private bool forceExit;
+		private System.Windows.Forms.ToolStripMenuItem toggleActivatetMenuItem;
 
-        public MainWindow()
-        {
-            InitializeComponent();
-            applicationSettings = InitializeApplicationSettings();
-            DataContext = new ViewModel(applicationSettings, ShowNotification);
+		public MainWindow()
+		{
+			InitializeComponent();
+			applicationSettings = InitializeApplicationSettings();
+			DataContext = new ViewModel(applicationSettings, ShowNotification, ChangeToggleActivationButtonText);
 
-            if (applicationSettings.MinimizeOnClose && !applicationSettings.ShowInSystemTray)
-            {
-                MessageBox.Show("MinimizeOnClose is set to true while ShowInSystemTray is set to False." +
-                    " There will be no way to shutdown the application. The setting for showing System Tray Icon will be overriden", "Configuration Error", MessageBoxButton.OK);
+			if (applicationSettings.MinimizeOnClose && !applicationSettings.ShowInSystemTray)
+			{
+				MessageBox.Show("MinimizeOnClose is set to true while ShowInSystemTray is set to False." +
+					" There will be no way to shutdown the application. The setting for showing System Tray Icon will be overriden", "Configuration Error", MessageBoxButton.OK);
 
-                applicationSettings.ShowInSystemTray = true;
-            }
+				applicationSettings.ShowInSystemTray = true;
+			}
 
-            if (applicationSettings.EnableNotifications && !applicationSettings.ShowInSystemTray)
-            {
-                MessageBox.Show("Notifications only work if the System Tray icon is also enabled", "Configuration Error", MessageBoxButton.OK);
+			if (applicationSettings.EnableNotifications && !applicationSettings.ShowInSystemTray)
+			{
+				MessageBox.Show("Notifications only work if the System Tray icon is also enabled", "Configuration Error", MessageBoxButton.OK);
 
-                applicationSettings.EnableNotifications = false;
-            }
+				applicationSettings.EnableNotifications = false;
+			}
 
-            if (applicationSettings.ShowInSystemTray)
-            {
-                ConfigureSystemTrayIcon();
-            }
-        }
+			if (applicationSettings.ShowInSystemTray)
+			{
+				ConfigureSystemTrayIcon();
+			}
+		}
 
-        private ApplicationSettings InitializeApplicationSettings()
-        {
-            var configurtion = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json")
-                .AddJsonFile("appsettings.local.json", optional: true)
-                .Build();
+		private ApplicationSettings InitializeApplicationSettings()
+		{
+			var configurtion = new ConfigurationBuilder()
+				.AddJsonFile("appsettings.json")
+				.AddJsonFile("appsettings.local.json", optional: true)
+				.Build();
 
-            return new ApplicationSettings()
-            {
-                ApiKey = configurtion["ApplicationSettings:ApiKey"],
-                DefaultProjectName = configurtion["ApplicationSettings:DefaultProjectName"],
-                IdleThresholdMinutes = int.Parse(configurtion["ApplicationSettings:IdleThresholdMinutes"]),
-                MinimizeOnClose = bool.Parse(configurtion["ApplicationSettings:MinimizeOnClose"]),
-                ShowInSystemTray = bool.Parse(configurtion["ApplicationSettings:ShowInSystemTray"]),
-                EnableNotifications = bool.Parse(configurtion["ApplicationSettings:EnableNotifications"]),
-            };
-        }
+			return new ApplicationSettings()
+			{
+				ApiKey = configurtion["ApplicationSettings:ApiKey"],
+				DefaultProjectName = configurtion["ApplicationSettings:DefaultProjectName"],
+				IdleThresholdMinutes = int.Parse(configurtion["ApplicationSettings:IdleThresholdMinutes"]),
+				MinimizeOnClose = bool.Parse(configurtion["ApplicationSettings:MinimizeOnClose"]),
+				ShowInSystemTray = bool.Parse(configurtion["ApplicationSettings:ShowInSystemTray"]),
+				EnableNotifications = bool.Parse(configurtion["ApplicationSettings:EnableNotifications"]),
+			};
+		}
 
-        private void ConfigureSystemTrayIcon()
-        {
-            notifyIcon = new System.Windows.Forms.NotifyIcon();
-            notifyIcon.Icon = new System.Drawing.Icon("./Assets/Diflexmo_logo.ico");
-            notifyIcon.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
+		private void ConfigureSystemTrayIcon()
+		{
+			notifyIcon = new System.Windows.Forms.NotifyIcon();
+			notifyIcon.Icon = new System.Drawing.Icon("./Assets/Diflexmo_logo.ico");
+			notifyIcon.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
 
-            notifyIcon.ContextMenuStrip = ConfigureContextMenuStrip();
+			notifyIcon.ContextMenuStrip = ConfigureContextMenuStrip();
 
-            notifyIcon.Visible = true;
-        }
+			notifyIcon.Visible = true;
+		}
 
-        private System.Windows.Forms.ContextMenuStrip ConfigureContextMenuStrip()
-        {
-            var contextMenu = new System.Windows.Forms.ContextMenuStrip();
+		private System.Windows.Forms.ContextMenuStrip ConfigureContextMenuStrip()
+		{
+			var contextMenu = new System.Windows.Forms.ContextMenuStrip();
 
-            var menuItem = new System.Windows.Forms.ToolStripMenuItem();
-            menuItem.Text = "E&xit";
-            menuItem.Click += ExitClicked;
-            contextMenu.Items.AddRange(new System.Windows.Forms.ToolStripMenuItem[] { menuItem });
+			toggleActivatetMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			toggleActivatetMenuItem.Text = "A&ctivate";
+			toggleActivatetMenuItem.Click += ToggleActivateClicked;
 
-            return contextMenu;
-        }
+			var exitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			exitMenuItem.Text = "E&xit";
+			exitMenuItem.Click += ExitClicked;
 
-        private void ExitClicked(object sender, EventArgs e)
-        {
-            forceExit = true;
-            Close();
-        }
+			contextMenu.Items.AddRange(new System.Windows.Forms.ToolStripMenuItem[] { toggleActivatetMenuItem, exitMenuItem });
 
-        private void NotifyIcon_MouseDoubleClick(object sender, System.Windows.Forms.MouseEventArgs e)
-        {
-            WindowState = WindowState.Normal;
-            Activate();
-        }
+			return contextMenu;
+		}
 
-        private void Window_StateChanged(object sender, EventArgs e)
-        {
-            if (applicationSettings.ShowInSystemTray)
-            {
-                if (WindowState == WindowState.Minimized)
-                {
-                    ShowInTaskbar = false;
-                }
-                else if (WindowState == WindowState.Normal)
-                {
-                    ShowInTaskbar = true;
-                }
-            }
-        }
+		private void ToggleActivateClicked(object sender, EventArgs e)
+		{
+			ViewModel.Instance?.StartCommand?.Execute(false);
+		}
 
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-        {
-            if (applicationSettings.MinimizeOnClose && !forceExit)
-            {
-                e.Cancel = true;
-                WindowState = WindowState.Minimized;
-            }
-            else
-            {
-                if (notifyIcon != null)
-                {
-                    notifyIcon.Visible = false;
-                }
-            }
-        }
+		private void ExitClicked(object sender, EventArgs e)
+		{
+			forceExit = true;
+			Close();
+		}
 
-        private void ShowNotification(string text)
-        {
-            if (applicationSettings.EnableNotifications && notifyIcon != null)
-            {
-                notifyIcon.ShowBalloonTip(1500, "Time Tracking", text, System.Windows.Forms.ToolTipIcon.Info);
-            }
-        }
-    }
+		private void NotifyIcon_MouseDoubleClick(object sender, System.Windows.Forms.MouseEventArgs e)
+		{
+			WindowState = WindowState.Normal;
+			Activate();
+		}
+
+		private void Window_StateChanged(object sender, EventArgs e)
+		{
+			if (applicationSettings.ShowInSystemTray)
+			{
+				if (WindowState == WindowState.Minimized)
+				{
+					ShowInTaskbar = false;
+				}
+				else if (WindowState == WindowState.Normal)
+				{
+					ShowInTaskbar = true;
+				}
+			}
+		}
+
+		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+		{
+			if (applicationSettings.MinimizeOnClose && !forceExit)
+			{
+				e.Cancel = true;
+				WindowState = WindowState.Minimized;
+			}
+			else
+			{
+				if (notifyIcon != null)
+				{
+					notifyIcon.Visible = false;
+				}
+			}
+		}
+
+		private void ShowNotification(string text)
+		{
+			Application.Current.Dispatcher.Invoke(() =>
+			{
+				if (applicationSettings.EnableNotifications && notifyIcon != null)
+				{
+					notifyIcon.ShowBalloonTip(1500, "Time Tracking", text, System.Windows.Forms.ToolTipIcon.Info);
+				}
+			});
+		}
+
+		private void ChangeToggleActivationButtonText(bool isStarted)
+		{
+			Application.Current.Dispatcher.Invoke(() =>
+			{
+				toggleActivatetMenuItem.Text = isStarted ? "S&top" : "A&ctivate";
+				notifyIcon.Icon = isStarted ? new System.Drawing.Icon("./Assets/Diflexmo_logo_active.ico") : new System.Drawing.Icon("./Assets/Diflexmo_logo.ico");
+			});
+		}
+	}
 }
