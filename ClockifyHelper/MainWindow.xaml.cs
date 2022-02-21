@@ -76,7 +76,7 @@ namespace ClockifyHelper
 		private void ConfigureSystemTrayIcon()
 		{
 			notifyIcon = new System.Windows.Forms.NotifyIcon();
-			notifyIcon.Icon = new System.Drawing.Icon("./Assets/Diflexmo_logo.ico");
+			notifyIcon.Icon = new System.Drawing.Icon("./Assets/favicon.ico");
 			notifyIcon.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
 
 			notifyIcon.ContextMenuStrip = ConfigureContextMenuStrip();
@@ -165,7 +165,7 @@ namespace ClockifyHelper
 			Application.Current.Dispatcher.Invoke(() =>
 			{
 				toggleActivatetMenuItem.Text = isStarted ? "S&top" : "A&ctivate";
-				notifyIcon.Icon = isStarted ? new System.Drawing.Icon("./Assets/Diflexmo_logo_active.ico") : new System.Drawing.Icon("./Assets/Diflexmo_logo.ico");
+				notifyIcon.Icon = isStarted ? new System.Drawing.Icon("./Assets/favicon-active.ico") : new System.Drawing.Icon("./Assets/favicon.ico");
 			});
 		}
 	}
